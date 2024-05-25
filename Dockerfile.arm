@@ -110,5 +110,7 @@ RUN chmod +x /docker-entrypoint.d/*
 COPY docker/docker-entrypoint.sh /
 RUN  sed -i 's/^childlogdir=.*$/nodaemon=true\nuser=root/' /etc/supervisor/supervisord.conf
 
+LABEL org.opencontainers.image.description "Very Nice -- Borat"
+
 CMD [ "/bin/sh", "-c", "/usr/bin/supervisord -c /etc/supervisor/supervisord.conf" ]
 ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
