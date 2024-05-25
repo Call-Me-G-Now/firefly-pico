@@ -1,8 +1,8 @@
 ARG REGISTRY=docker.io/stsdockerhub
 ARG LARAVEL_ALPINE_VERSION=8.3.2-laravel-alpine3.19
-ARG TARGETPLATFORM=linux/armv7
+# ARG TARGETPLATFORM=linux/arm/v7
 
-FROM --platform=$BUILDPLATFORM php:8.2-fpm as base
+FROM --platform=$TARGETPLATFORM php:8.2-fpm as base
 
 RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
