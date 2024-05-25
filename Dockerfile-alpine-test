@@ -1,0 +1,5 @@
+FROM alpine
+
+LABEL org.opencontainers.image.description "Very Nice -- Borat"
+
+RUN echo -e "hello world"
