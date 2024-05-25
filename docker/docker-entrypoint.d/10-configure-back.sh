@@ -1,10 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 #---------------------------------------------------------------------
 # configurations
 #---------------------------------------------------------------------
 
-function app() {
+function app()
+{
   # Set env type
   ENV_FILE="/var/www/html/.env"
   sed -i -e 's|APP_ENV=.*$|APP_ENV='"${APP_ENV}"'|g' "$ENV_FILE"
