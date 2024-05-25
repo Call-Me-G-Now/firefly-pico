@@ -1,6 +1,3 @@
-ARG REGISTRY=docker.io/stsdockerhub
-ARG LARAVEL_ALPINE_VERSION=8.3.2-laravel-alpine3.19
-# ARG TARGETPLATFORM=linux/arm/v7
 
 FROM --platform=$TARGETPLATFORM php:8.2-fpm as base
 
@@ -23,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
     apt-get update && apt-get install -y --no-install-recommends nodejs && \
     rm -rf /tmp/* /var/{cache,log}/* /var/lib/apt/lists/*
 
-    # # ================================
+# # ================================
 FROM base as build-container
 RUN apt-get update && apt-get install git -y --no-install-recommends
 
@@ -97,11 +94,11 @@ FROM base
 WORKDIR /var/www/html
 
 RUN --mount=type=bind,from=build-container,source=/tmp/,target=/build \
-tar -xf /build/app-back.tar.gz -C .
+    tar -xf /build/app-back.tar.gz -C .
 
 WORKDIR /var/www/html/front
 RUN --mount=type=bind,from=build-container,source=/tmp/,target=/build \
-tar -xf /build/app-front.tar.gz -C .
+    tar -xf /build/app-front.tar.gz -C .
 
 COPY docker/conf/supervisor/node.ini /etc/supervisor/conf.d/node.conf
 COPY docker/conf/nginx/default.conf /etc/nginx/http.d/
