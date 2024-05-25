@@ -1,4 +1,4 @@
-name: Build docker image -- ARM
+name: Build docker image -- tagtest
 
 on:
   workflow_dispatch:
