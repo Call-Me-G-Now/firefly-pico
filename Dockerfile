@@ -14,7 +14,7 @@ RUN php -r "unlink('composer-setup.php');"
 RUN ls -lahrt /usr/local/bin/composer
 
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg supervisor -y && \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl unzip gnupg supervisor -y && \
     rm -rf /tmp/* /var/{cache,log}/* /var/lib/apt/lists/* && \
     mkdir -p /etc/apt/keyrings && \
     NODE_MAJOR=20 && \
