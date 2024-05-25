@@ -101,8 +101,8 @@ WORKDIR /var/www/html/front
 RUN --mount=type=bind,from=build-container,source=/tmp/,target=/build \
     tar -xf /build/app-front.tar.gz -C .
 
-COPY docker/conf/supervisor/node.ini /etc/supervisor/conf.d/
-COPY docker/conf/nginx/default.conf /etc/nginx/http.d
+COPY docker/conf/supervisor/node.ini /etc/supervisor/conf.d/node.conf
+COPY docker/conf/nginx/default.conf /etc/nginx/http.d/
 
 # Configure entrypoint
 COPY docker/docker-entrypoint.d /docker-entrypoint.d/
@@ -119,4 +119,7 @@ run apt update \
 RUN apt install supervisor -y
 RUN npm install
 # ENTRYPOINT [ "/bin/sh" ]
-CMD [ "supervisord" ]
+RUN  sed -i 's/^childlogdir=.*$/nodaemon=true\nuser=root/' /etc/supervisor/supervisord.conf
+COPY docker/docker-entrypoint.sh /
+ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
+CMD [ "/bin/sh", "-c", "/usr/bin/supervisord -c /etc/supervisor/supervisord.conf" ]
