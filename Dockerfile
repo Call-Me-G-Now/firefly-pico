@@ -7,14 +7,25 @@ FROM --platform=$BUILDPLATFORM php:8.2-fpm as base
 RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 RUN php -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-RUN php composer-setup.php --install-dir /usr/local/bin/ --filename composer
+RUN php composer-setup.php --install-dir /usr/local/bin/ --filename composer --version 2.6.6
 RUN php -r "unlink('composer-setup.php');"
 
 # RUN echo -e ${PATH}
 RUN ls -lahrt /usr/local/bin/composer
 
 
-# # ================================
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg supervisor -y && \
+rm -rf /tmp/* /var/{cache,log}/* /var/lib/apt/lists/* && \
+mkdir -p /etc/apt/keyrings
+
+ENV NODE_MAJOR=20
+
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /tmp/* /var/{cache,log}/* /var/lib/apt/lists/*
+
+    # # ================================
 FROM base as build-container
 RUN apt-get update
 RUN apt-get install git -y
@@ -37,16 +48,6 @@ RUN tar --owner=www-data --group=www-data --exclude=.git -czf /tmp/app-back.tar.
 WORKDIR /var/www/html/front
 
 COPY front .
-
-ENV NODE_MAJOR=20
-
-RUN apt-get install ca-certificates curl gnupg -y \
-    && mkdir -p /etc/apt/keyrings
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-run apt update \
-    && apt install nodejs -y
-
 
 RUN npm install
 RUN npm run build
@@ -93,13 +94,16 @@ RUN tar --owner=www-data --group=www-data \
 
 FROM base
 
+
+
 WORKDIR /var/www/html
+
 RUN --mount=type=bind,from=build-container,source=/tmp/,target=/build \
-    tar -xf /build/app-back.tar.gz -C .
+tar -xf /build/app-back.tar.gz -C .
 
 WORKDIR /var/www/html/front
 RUN --mount=type=bind,from=build-container,source=/tmp/,target=/build \
-    tar -xf /build/app-front.tar.gz -C .
+tar -xf /build/app-front.tar.gz -C .
 
 COPY docker/conf/supervisor/node.ini /etc/supervisor/conf.d/node.conf
 COPY docker/conf/nginx/default.conf /etc/nginx/http.d/
@@ -108,18 +112,8 @@ COPY docker/conf/nginx/default.conf /etc/nginx/http.d/
 COPY docker/docker-entrypoint.d /docker-entrypoint.d/
 RUN chmod +x /docker-entrypoint.d/*
 
-ENV NODE_MAJOR=20
-
-RUN apt-get update && apt-get install ca-certificates curl gnupg -y \
-    && mkdir -p /etc/apt/keyrings
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-run apt update \
-    && apt install nodejs -y
-RUN apt install supervisor -y
-RUN npm install
-# ENTRYPOINT [ "/bin/sh" ]
-RUN  sed -i 's/^childlogdir=.*$/nodaemon=true\nuser=root/' /etc/supervisor/supervisord.conf
 COPY docker/docker-entrypoint.sh /
-ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
+RUN  sed -i 's/^childlogdir=.*$/nodaemon=true\nuser=root/' /etc/supervisor/supervisord.conf
+
 CMD [ "/bin/sh", "-c", "/usr/bin/supervisord -c /etc/supervisor/supervisord.conf" ]
+ENTRYPOINT ["/bin/sh", "/docker-entrypoint.sh"]
