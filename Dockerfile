@@ -3,12 +3,6 @@ ARG LARAVEL_ALPINE_VERSION=8.3.2-laravel-alpine3.19
 ARG TARGETPLATFORM=linux/armv7
 
 FROM --platform=$BUILDPLATFORM php:8.2-fpm as base
-# RUN apt-get update && apt-get install -y \
-# 		libfreetype-dev \
-# 		libjpeg62-turbo-dev \
-# 		libpng-dev \
-# 	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
-# 	&& docker-php-ext-install -j$(nproc) gd
 
 RUN docker-php-ext-install mysqli pdo pdo_mysql && docker-php-ext-enable pdo_mysql
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -19,6 +13,8 @@ RUN php -r "unlink('composer-setup.php');"
 # RUN echo -e ${PATH}
 RUN ls -lahrt /usr/local/bin/composer
 
+
+# # ================================
 FROM base as build-container
 RUN apt-get update
 RUN apt-get install git -y
@@ -105,9 +101,22 @@ WORKDIR /var/www/html/front
 RUN --mount=type=bind,from=build-container,source=/tmp/,target=/build \
     tar -xf /build/app-front.tar.gz -C .
 
-COPY docker/conf/supervisor/node.ini /etc/supervisor.d
+COPY docker/conf/supervisor/node.ini /etc/supervisor/conf.d/
 COPY docker/conf/nginx/default.conf /etc/nginx/http.d
 
 # Configure entrypoint
 COPY docker/docker-entrypoint.d /docker-entrypoint.d/
 RUN chmod +x /docker-entrypoint.d/*
+
+ENV NODE_MAJOR=20
+
+RUN apt-get update && apt-get install ca-certificates curl gnupg -y \
+    && mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+run apt update \
+    && apt install nodejs -y
+RUN apt install supervisor -y
+RUN npm install
+# ENTRYPOINT [ "/bin/sh" ]
+CMD [ "supervisord" ]
