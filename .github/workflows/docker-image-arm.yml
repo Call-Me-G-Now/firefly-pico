@@ -3,9 +3,9 @@ name: Build docker image -- ARM
 on:
   workflow_dispatch:
   push:
-    tags:
-      - '*'
-      - '!*-dev'
+    branches:
+      - 'arm'
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
